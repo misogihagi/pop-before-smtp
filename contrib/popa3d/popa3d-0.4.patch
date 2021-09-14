@@ -1,0 +1,73 @@
+--- pop_auth.c.orig	Tue Nov 14 19:58:46 2000
++++ pop_auth.c	Tue Nov 14 20:20:38 2000
+@@ -8,4 +8,6 @@
+ #include <syslog.h>
+ 
++#include "popbsmtpsupport.h"
++
+ #include "misc.h"
+ #include "params.h"
+@@ -69,6 +71,6 @@
+ 	}
+ 
+-	syslog(SYSLOG_PRIORITY, "Authentication %s for %s",
++	syslog(SYSLOG_PRIORITY, "Authentication %s for %s -- [%s]",
+ 		result == AUTH_OK ? "passed" : "failed",
+-		mailbox ? mailbox : "UNKNOWN");
++		mailbox ? mailbox : "UNKNOWN", inet_ntoa(saddr.sin_addr));
+ }
+--- pop_root.c.orig	Tue Feb  1 06:18:12 2000
++++ pop_root.c	Tue Nov 14 21:43:09 2000
+@@ -32,4 +32,6 @@
+ static char *mailbox;
+ 
++#include "popbsmtpsupport.h"
++
+ int log_error(char *s)
+ {
+@@ -212,4 +214,11 @@
+ 	memcpy(&pop_pw, pw, sizeof(pop_pw));
+ 
++#if !POP_STANDALONE
++	slen = sizeof(saddr);	
++	if (getpeername(0, (struct sockaddr *)&saddr, &slen)<0) {
++		syslog(SYSLOG_PRIORITY, "getpeername(0) failed");
++		return 1;
++	}
++#endif
+ 	return 0;
+ }
+--- popbsmtpsupport.h	Tue Nov 14 20:19:43 2000
++++ popbsmtpsupport.h	Tue Nov 14 20:19:43 2000
+@@ -0,0 +1,16 @@
++#ifndef _SYS_TYPES_H_
++#include <sys/types.h>
++#endif
++#ifndef _SYS_SOCKET_H_
++#include <sys/socket.h>
++#endif
++#ifndef _NETINET_IN_H_
++#include <netinet/in.h>
++#endif
++#ifndef _ARPA_INET_H_
++#include <arpa/inet.h>
++#endif
++
++struct sockaddr_in saddr;
++int slen;
++
+--- standalone.c.orig	Tue Nov 14 21:26:11 2000
++++ standalone.c	Tue Nov 14 21:36:11 2000
+@@ -22,4 +22,6 @@
+ #include <arpa/inet.h>
+ 
++#include "popbsmtpsupport.h"
++
+ /*
+  * These are defined in pop_root.c.
+@@ -129,4 +131,5 @@
+ 		new = accept(sock, (struct sockaddr *)&addr, &addrlen);
+ 
++		memcpy(&saddr, &addr, addrlen);
+ /*
+  * I wish there was a portable way to classify errno's... In this case,

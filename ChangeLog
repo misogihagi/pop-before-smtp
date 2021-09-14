@@ -1,0 +1,1247 @@
+2007-06-06  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.42.
+
+2007-06-06  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Verify that the $logtime_pat variable is working in --reprocess
+	  mode, and output a warning if it is not.
+	- Don't short-circuit the starting_up code when using --reprocess.
+	- Output a message at the end of the log when using --reprocess.
+
+	* pop-before-smtp-conf.pl:
+	- Made the Cyrus pattern only match a successful login line.
+	- Made the Courier-POP3 pattern match a TIMEOUT line in the $out_pat.
+
+2006-10-10  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- The "Match Many Patterns" section now properly interprets
+	  the [LOGTIME] string in the patterns it is given.
+
+2006-03-24  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a couple debug log messages to the sync_sendmail()
+	  function in the Sendmail SMTP section.
+
+2006-03-17  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a new sample section that shows how to configure
+	  pop-before-smtp to read its log data on stdin.  Also show
+	  how to make syslog run the script and pipe it data.
+
+	* pop-before-smtp:
+	- Include the version number in the starting-up log message.
+
+2006-03-01  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.41.
+
+	* pop-before-smtp, pop-before-smtp-conf.pl:
+	- Fixed a problem with the new $logtime_pat not handling a
+	  space-padded day of the month.
+
+2006-02-20  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.40.
+
+2006-02-19  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/popa3d/popa3d-1.0.patch:
+	- Added a patch for the 1.0 release of popa3d.
+
+	* pop-before-smtp, pop-before-smtp-conf.pl:
+	- Added a new configure variable: $logtime_pat.  This variable
+	  lets the user change the default regex that is used to find
+	  the time for each line of a logfile, something that the code
+	  in pop-before-smtp was doing several places using hard-wired
+	  regex values.  Also, the code now supports log-lines where
+	  the time value is not at the start of the line.
+
+2006-02-17  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Improved the syslog dovecot pattern to work with the latest
+	  dovecot version.
+
+2006-02-16  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/pat-tester:
+	- Skip our custom_match function if the user supplied one.
+	- Make Date::Format and Date::Parse available, just in case.
+
+2006-02-08  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a new style of dovecot logging.
+
+2006-01-20  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/README.QUICKSTART:
+	- Updated the sendmail config information.
+
+2006-01-07  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Another improvement to the UW POP/IMAP $out_pat.
+
+2006-01-07  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.39.
+
+	* contrib/popauth.m4:
+	- A fix from Alain Knaff that is needed for a sendmail setup
+	  that uses TLS with SMTP.
+
+2005-12-07  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Improved the Courier patterns to work with another minor
+	  variation.
+
+2005-11-26  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a comment explaining what values get returned by the
+	  $pat regex.
+	- Improved the qpopper regex.
+
+2005-10-08  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Reverse the order of the @q array that holds the expiration
+	  queue.
+	- When $out_pat is in use, we need to take extra care to avoid
+	  adding a duplicate expiration event for an IP.
+
+	* pop-before-smtp-conf.pl:
+	- Improved the $out_pat for UW POP/IMAP.
+
+2005-08-10  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added an $out_pat for UW POP/IMAP.
+
+2005-07-23  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/pat-tester:
+	- Added a simple debug program that makes it easy to test a
+	  $pat (and optionally an $out_pat) value against one or more
+	  log files.
+
+2005-07-22  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Don't allow an $out_pat match to insert an IP that wasn't
+	  already inserted by a $pat match.
+
+	* pop-before-smtp-conf.pl:
+	- Handle latest Courier POP/IMAP non-SSL log lines.
+
+2005-07-13  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.38.
+
+2005-07-09  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Detaint IP values that come from the DB at startup.
+
+	* ip-blocking-conf.pl:
+	- A new, alternate config file that finds attacking IPs in a
+	  log file and blocks the IPs using iptables (or ipchains).
+	  (Based on an implementation by Anton V. Popivnenko.)
+
+2005-07-08  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added method functions for the adding/deleting of items
+	  to/from the DB.
+	- Make sure that the startup-scan can't leave the DB locked.
+	- Make sure that we don't call the the flock function more than
+	  once in a row with the same "1" (or "0") parameter (which was
+	  unlikely, but is now impossible).
+	- Moved some function-pointer-init code so that the code that
+	  implements the --list option can depend on its effects.
+	- If --nowrite is specified, override the user's add_/del_func
+	  pointers with no-op functions.
+	- Release the flock in the --list code prior to starting the
+	  output.
+
+	* pop-before-smtp-conf.pl:
+	- Added $add_func and $del_func to the used variables list.
+	- Some minor improvements to the locking functions.
+	- Tweaked a couple comments.
+
+2005-05-13  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.37.
+
+2005-01-07  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Got rid of an extraneous space from the dovecot pattern
+	  and improved it to accept any IPv6 prefix on the IP.
+
+	* pop-before-smtp:
+	- Optimized the startup log-scan when an $out_pat regex is
+	  defined.
+
+2005-01-06  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp-conf.pl:
+	- Added support for a new logout/disconnect pattern that
+	  lets the user define an optional $out_pat variable, at
+	  which point the program will keep track of concurrent
+	  connections from each IP address and only expire the IP
+	  when the last connection is closed.  This makes us work
+	  better with connection-caching email clients, such as
+	  Thunderbird's IMAP mode.
+
+2005-01-05  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Turn on "use strict".
+	- A few minor changes to make all the config sections work
+	  with "use strict".
+
+	* contrib/popa3d/popa3d-0.6.4.patch:
+	- Updated a syslog define's name (SYSLOG_PRI_ERROR).
+
+2004-11-13  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a Qpopper pattern that works when Qpopper is doing its
+	  own logging (i.e. without syslog).
+	- Added support for an $FAIL_pat that works when $PID_pat,
+	  $IP_pat, and $OK_pat are defined (but is optional).  This
+	  lets a user match a more verbose sequence of log lines where
+	  the OK_pat line is not the first PID-matching message after
+	  the IP_pat line (see the config file for more details).
+
+2004-11-08  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- If $flock is not set, make sure that the --list option
+	  doesn't try to flock the database.
+
+2004-10-03  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.36.
+
+2004-08-16  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* README:
+	- Don't try to duplicate install/configure info here -- just
+	  point people at the best sources for this info.
+
+	* contrib/README.QUICKSTART:
+	- Improved the test section, including a way to make sure that
+	  your site hasn't become an open relay.
+	- Improved the start section.
+
+2004-08-15  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Improved the perldoc manpage.
+
+	* pop-before-smtp-conf.pl:
+	- Made it a little more obvious that the $pat2 value would need
+	  to be created with a "my" (due to the "use strict" setting).
+
+	* contrib/README.QUICKSTART:
+	- Improved the sendmail config details.
+
+	* contrib/popauth.m4:
+	- New file that has M4 macros for sendmail.  This was modified
+	  by Alain Knaff from the official sendmail version to add in
+	  some extra SPF support.
+
+2004-08-14  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* COPYING:
+	- Updated the copyright years.
+
+	* contrib/init-debian:
+	- Merged in some changes from the official debian package and
+	  made some improvements of my own.
+
+2004-07-19  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Updated the Dovecot pattern to work with the newer version's
+	  logging style (as well as the old).
+
+	* contrib/README.QUICKSTART:
+	- Improved some of the text in the dependency section.
+
+2004-07-01  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Log an error using category 'err', not the deprecated 'error'.
+
+2004-04-29  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- The config option for solidpop3d is --enable-logextend, not
+	  --enable-extendlog.
+
+2004-04-27  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a multi-line match rule for solidpop3d.
+	- Got rid of some useless parens.
+
+2004-04-23  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/README.QUICKSTART:
+	- Moved the install step higher and a few other misc. changes.
+
+2004-04-21  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/popa3d/popa3d-0.4.patch:
+	- Added a missing diff header.
+
+	* contrib/popa3d/popa3d-0.6.4.patch:
+	- Updated patch from Jan Huelsbergen for 0.6.4 version of popa3d.
+
+2004-04-13  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Import more Fcntl symbols, including the SEEK_* symbols
+	  (which we now use) and the F_* symbols (which some optional
+	  code in the config file needs).
+
+2004-04-05  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added a --version option to output the current version.
+
+2004-04-05  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Include the config-file path in the output of the
+	  --dump-config option.
+
+2004-03-22  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Upgraded Cyrus $pat based on log line examples provided by
+	  Axel P. Jurak.
+
+2004-03-05  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/getfromcpan:
+	- Got rid of no-longer-needed modules and updated the versions
+	  of the rest.
+
+	* contrib/README.QUICKSTART:
+	- No need to mention Time::HiRes or File::Tail anymore.
+
+2004-03-04  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.35.
+
+2004-03-04  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added --list to list the IPs currently in the database.
+
+2004-02-09  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Fixed the Dovecot pattern (was matching a hostname of "www").
+
+2004-02-08  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added an extra (optional) locking function for sendmail that
+	  uses fcntl().  (Code provided by Alain Knaff.)
+
+2004-01-25  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Updated the pattern support for vm-pop3d.
+
+2004-01-22  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- We now let the user configure how logfile-reading should be
+	  done, with the new default being to use some simpler logfile-
+	  reading functions that we provide. The user can override this
+	  by setting $tail_init_func and $tail_getline_func.  This fixes
+	  some out-of-control CPU use that some users experience using
+	  File::Tail.
+
+	* pop-before-smtp-conf.pl:
+	- Added a File::Tail config section that can be used to restore
+	  the use of File::Tail for logfile reading.
+
+2004-01-06  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.34.
+
+2003-11-11  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, contrib/README.QUICKSTART,
+	contrib/README.rootless-install:
+	- Changed (deprecated) check_relay_domains to
+	  reject_unauth_destination.
+
+2003-09-21  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Neatened up, consolidated, and enhanced the Qpopper patterns.  Also
+	  eliminated the various "from" comments near each pattern (since they
+	  were unfair in their incompleteness and also potentially distracting
+	  to newbies).
+
+2003-09-13  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Log the @mynets array if --debug was specified.
+	- Check each item in @mynets and log an error for any that
+	  don't parse.
+
+2003-07-11  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a pattern for Dovecot POP3/IMAP (from Brian Stanback).
+
+2003-05-04  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp-conf.pl:
+	- Added "APOP" to the default $pat value.
+
+2003-04-30  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a pattern for the Apple IMAP MAIL Server and a (commented-
+	  out) value for where the watchlog file exists.
+
+2003-04-28  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Output the state of the watchlog matching when --dumpconfig is
+	  specified.
+
+2003-03-28  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.33.
+
+2003-02-12  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Make sure that we don't push two items onto the queue that have an
+	  identical expire time (they would cause a warning during
+	  expiration).
+
+	* pop-before-smtp-conf.pl:
+	- Added an optional call to setlogsock() in the syslog code for folks
+	  that don't get any syslog output to uncomment.
+
+2003-02-01  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Tweaked the Courier POP/IMAP pattern so that it will match a modern
+	  log entry.
+	- Added an EOF comment that the "1;" line must remain last in the
+	  file.
+
+	* contrib/README.QUICKSTART:
+	- Mention how to "emerge" the required modules on a Gentoo Linux
+	  system.
+
+2003-01-06  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Changed all the =pod lines into =cut lines and tweaked the comments
+	  about how to enable each section.
+
+	* contrib/README.QUICKSTART:
+	- Changed the reference to =pod/=cut lines into one about the two =cut
+	  lines.
+	- Some more sendmail info.
+
+2003-01-02  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added an alternate UW IMAP $pat.
+
+2002-12-24  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Tweaked some comments and some indentation.
+
+2002-12-23  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Reworked the multi-logline matching configuration to make it easier.
+	- Improved the multi-logline matching custom_match() routine to make
+	  it handle interleaved log entries.
+
+	* pop-before-smtp.spec:
+	- Moved the %post %preun sections.
+
+2002-12-15  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.32.
+
+2002-12-15  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added multi-line match support for popa3d.
+
+2002-12-10  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added pattern for teapop from Patrick Prasse
+	  <patrick.prasse@gmx.net>.
+
+2002-11-20  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a pattern for solidpop3d.
+
+2002-11-15  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/README.QUICKSTART:
+	- Updated the sendmail install info.
+
+	* pop-before-smtp-conf.pl:
+	- Tweaked a sendmail comment.
+
+2002-11-13  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Modified mynet_postfix() to expand any $variables that postconf
+	  mentiones in its response.  This is a modified version of a patch
+	  submitted by Vector <vector@itpsg.com>.
+
+2002-11-04  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added a section for CDB_File (not yet tested, though).
+
+2002-08-31  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version to 1.31.
+
+2002-08-31  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added the --daemon=PIDFILE option.
+
+	* pop-before-smtp.init, contrib/init-debian, contrib/init-redhat-alex,
+	contrib/init-redhat-bet:
+	- Use the new --daemon=PIDFILE option.
+
+2002-07-19  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Changed a few $pat values to omit the end-of-line match if we've
+	  matched enough to already be confident that this is a success line.
+	  This makes us a little more flexible when handling future log-line
+	  changes.
+	- Improved the Nick Bauer qpopper match line.
+
+2002-07-15  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Fixed the BerkeleyDB db_sync call.
+
+2002-07-12  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Detaint the value from the sendmail.pid file.
+	- Made the sendmail-signaling optional.
+
+2002-06-24  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Improved some comments to mention disabling the =cut line when
+	  disabling the preceding =pod line.
+
+2002-06-21  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Some more trial sendmail-support changes.
+
+2002-05-30  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/README.QUICKSTART:
+	- Correct the sendmail instructions for adding the popauth hack.
+
+2002-05-25  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added the --dumpconfig option to show some basic config information.
+	- Mention a sendmail.cf setup, and be less Postfix-centric.
+
+	* pop-before-smtp-conf.pl:
+	- Added a sendmail SMTP section.
+
+	* README:
+	- Mention that we work with other SMTP software besides Postfix.
+	- Point people at the README.QUICKSTART file.
+	- Improved/simplified/re-ordered some of the install info.
+
+	* contrib/README.QUICKSTART:
+	- Updated to include sendmail info and to be less Postfix-centric.
+
+2002-05-21  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Added NDBM_File example section.
+
+2002-05-14  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Tweaked the qpopper patterns to make them a little more versatile.
+
+2002-05-13  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/README.QUICKSTART:
+	- Fixed a mistyping of the config file's name.
+
+2002-05-09  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Evaluate getpwuid() in a scalar context.
+
+2002-05-05  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added "=over 4" and "=back" to the pod docs (around the options
+	  list).
+	- If we've been configured to not re-read the maillog file, we set
+	  any existing IPs in the DB to expire in $grace seconds.
+	- Improved the slow-system expire check so that the last person
+	  doesn't consistently get 2*$grace seconds of authorization.
+
+	* contrib/README.QUICKSTART:
+	- Fixed a couple spelling errors and the numbering of the steps.
+
+	* TODO:
+	- Removed another completed todo-item.
+
+2002-04-27  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Upped the version number to 1.30.
+
+2002-04-27  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* contrib/init-debian:
+	- A slightly modified version of Debian's init file (taken from their
+	  package).
+
+	* pop-before-smtp.init, contrib/{init-redhat-bet,init-redhat-alex}:
+	- Some minor tweaks to keep the changes small between all our init
+	  files.
+
+2002-04-26  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Just ignore hash:FILE entries in the mynetworks setup.
+
+2002-04-25  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added SIGHUP handling to reopen the log file (when logto is used).
+
+	* pop-before-smtp-conf.pl:
+	- Updated the Courier POP/IMAP regex.
+
+2002-04-24  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* README:
+	- Got rid of the "(untested)" caveat for the getfromcpan script and
+	  mention that it works well if run as a non-root user.
+	- Tweaked the file-locking comments some more.
+
+	* pop-before-smtp.spec:
+	- Use -q with %setup.
+	- Weeded out a few things from the %doc dir.
+
+	* contrib/getfromcpan:
+	- Commented-out the code that deletes the RPMs.
+	- Mentioned our changes and updated the version to 1.2.
+
+	* contrib/README.QUICKSTART:
+	- Removed a comment that getfromcpan removes the RPMs it builds.
+
+2002-04-19  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- A few more minor doc/comment changes.
+	- Output the usage message using <<EOT.
+
+	* pop-before-smtp-conf.pl:
+	- A few more comment tweaks.
+
+	* README:
+	- Added a note about our file-locking code.
+
+	* TODO:
+	- Removed a completed todo-item.
+
+2002-04-17  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Started testing 1.30pre2.
+
+2002-04-17  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added a couple comments.
+
+	* pop-before-smtp-conf.pl:
+	- Change some comments to (hopefully) make things easier to wade
+	  through.
+
+2002-04-16  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Updated the Courier POP/IMAP pattern.
+	- Added backslashes to several $pat vars in front of the IP-dot chars.
+	- Added an example custom_match() subroutine that efficiently matches
+	  multiple regular expressions.
+
+	* README, contrib/README.QUICKSTART:
+	- A few more improvments for the new version.
+
+	* pop-before-smtp:
+	- Fixed the IP address in the expiration-event log message.
+	- Mentioned that we depend on Date::Format now (which is a part of
+	  the TimeDate module that is already a dependency).
+
+2002-04-15  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Updated the pod doc to have all the latest options, to list what
+	  all the options do, to order the info a little better, and to not
+	  make it sound like Postfix is the only SMTP software we work with.
+	- Fixed the usage message, and tweaked the Getopt config a bit.
+	- If --reprocess is specified, make sure that we start reading from
+	  the beginning of the log file.
+	- Added back a debug message for every expiration event.
+	- Tweaked flock_DB() a tad.
+
+	* TODO:
+	- Added a new doc-related item.
+
+2002-04-14  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Started testing 1.30pre1.
+
+2002-04-14  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Fixed --nodebug (my changes had made it work the same as --debug).
+	- Added $logto variable to make overriding our output-log easier.
+	  E.g. the previous config might have called set_output_log(),
+	  which could fail (if we're not root) and trying to override it
+	  with --logto on the command-line wouldn't do so soon enough to
+	  avoid this.
+
+	* pop-before-smtp-conf.pl:
+	- Changed the code that used set_output_log() and \&log_to_stdout to
+	  set the new $logto var.
+
+2002-04-14  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Updated the init-file example in the docs.
+	- Changed the --debug option to always set the $log_func and to
+	  select(STDOUT).
+
+	* pop-before-smtp-conf.pl:
+	- Added an introductory comment.
+
+	* contrib/README.QUICKSTART:
+	- Updated to handle the new config file and improve a few things.
+
+	* contrib/getfromcpan:
+	- Read the %_topdir out of the .rpmmacros file (if it exists).
+	- Put all the module versions numbers in variables at the top of the
+	  file and updated them to their most-current values.
+	- Fixed all the echoes with unbalanced double-quotes.
+	- Fixed a couple of the sanity checks.
+	- Fixed the pre-installation cleanup to cleanup the SOURCES dir.
+	- Allow the script to be run as non-root to just build the RPMs (it
+	  skips installing the RPMs, and also does not remove them).
+
+	* contrib/perlmod2rpm:
+	- Updated to look in ~/.rpmmacros for the %_topdir definition and use
+	  that in place of /usr/src/redhat if found.
+
+	* pop-before-smtp.spec:
+	- Added potential support for installing a custom config file.
+	- Put the unchanged config file into the doc dir.
+	- Tweaked the %post and %preun sections to not re-run on update.
+
+2002-04-13  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added the ability to override our tie, sync, and flock functions
+	  from the config file.
+	- Allow the value we put into the DB to be configured.
+	- Allow the finding of the mynetwork value to be configured.
+	- Use time2str() for our stdout-log timestamp.
+
+	* pop-before-smtp-conf.pl:
+	- Added a commented-out sample setup for postfix BerkeleyDB, qmail
+	  tcprules, and Courier SMTP.
+	- Added $dbvalue section.
+	- Added /var/log/mail.log to the list of known watch-log values.
+
+	* README:
+	- Updated the info related to syslog setup.
+	- Changed the notes concerning Courier SMTP and qmail.
+
+	* TODO:
+	- Removed several finished items, added something new.
+
+	* COPYING:
+	- Tweaked the Copyright.
+
+2002-04-13  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Removed the dashes from the current (pre-release) version number.
+
+	* pop-before-smtp.spec:
+	- Updated the Version/Source/Packager/URL.
+	- Since we're installing the docs as a separate man page, strip the
+	  pod doc out of the installed script.
+	- Install the config file in /etc.
+	- Added %clean.
+	- Fixed the man-page reference in the %files section to work even if
+	  the file gets compressed.
+	- Put the ChangeLog in the doc dir.
+
+	* pop-before-smtp.init, contrib/init-redhat-{alex,bet}:
+	- Tweaked a few things to increase the similarity between the
+	  various init scripts while still preserving the significant
+	  differences.
+
+	* contrib/README.QUICKSTART:
+	- Tell people to send fixes to the mailing list.
+	- Fixed the line-wrapping glitches.
+
+2002-04-12  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp-conf.pl:
+	- Removed an old comment that got superseded.
+
+2002-04-11  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Added the --logto=FILE option.
+	- Removed the day-of-the-week from the stdout timestamp.
+	- Don't force the extra expiration check quite so often.
+
+	* pop-before-smtp-conf.pl:
+	- Mention the new set_output_log() function, and put the syslog()
+	  setup next to it.
+	- Added Courier-POP3 to the Courier-IMAP pattern.
+	- If the default watch-log path doesn't exist, try to figure out one
+	  that does.
+
+	* pop-before-smtp.init:
+	- Only intuit command-line options if there is no config file present.
+	- Added code for Mandrake's /var/log/mail/info log file.
+	- Got rid of hard-coded /usr/bin path to ps (ps is in /bin on many
+	  systems).
+
+2002-04-10  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Moved the config items into a config file and added the
+	  --config=FILE option to override its default location.
+	- Enabled only one $pat variable by default (UW).
+	- Added the ability to use a custom_match() function to enable more
+	  complex watch-log matching.
+	- Changed the name of the --logfile option to --watchlog (though we
+	  still accept --logfile for backward compatibility).
+	- Added the --reprocess option (for debug processing of old log data).
+	- Changed the optional output-log messages to have a timestamp, be a
+	  little more concise, and support being easily overridden.  This
+	  makes it trivial to support syslog() output.
+	- Log what signal killed us (if logging).
+	- Write the "die" message to the output log (if logging).
+
+	* TODO:
+	- Mention a couple items that I'd like to do.
+	- Got rid of the separate-config discussion (which is now done).
+
+	* pop-before-smtp-conf.pl:
+	- Moved the various user-selectable $pat values here.
+	- Added pattern for Perdition.
+	- Include the various overridable parameters that a user might want to
+	  tweak.
+	- Added an example custom_match() function for vm-pop3d support (since
+	  it requires parsing 2 lines to determine success).
+	- Added the necessary setup for using syslog() (commented out).
+
+2002-04-10  Wayne Davison  <wayned@users.sourceforge.net>
+
+	* pop-before-smtp:
+	- Improved cleanup_nets() to weed-out comments from included files,
+	  de-taint the mynetworks include-file data, and to make the code a
+	  little simpler.
+	- Changed the expiration code to better ensure that expired IPs don't
+	  hang around overly long.
+	- Updated the URL to the mailing list and the project's home page.
+	- Moved the change-log data into this ChangeLog file.
+
+2001-01-19  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.29.
+
+	* pop-before-smtp.init:
+	- Re-added chkconfig-supporting comments to init script.
+	- Modified init script to automatically find suitable pid file, and
+	  try and automatically try to find suitable maillog to watch.
+
+2001-01-06  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp:
+	- Released version 1.28.
+
+	* pop-before-smtp.spec:
+	- Dropped now-bogus ref to perlmod2rpm from spec file.
+
+2001-01-06  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.27.
+
+	* README:
+	- Added note in README for Outlook Express config, no send
+	  immediately, from Henk Kuipers <henk@bb36.nl>.
+
+	* pop-before-smtp.init, contrib/init-redhat-alex:
+	- Added another fix from Alexander Burke <alex@pdqsolutions.com> for
+	  his Red Hat init script, moved it into contrib, moved generic up as
+	  the main init script.
+
+	* COPYING:
+	- Added COPYING, stating the license terms under which this software
+	  is made available.
+
+2000-11-24  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.26.
+
+	* contrib/getfromcpan:
+	- Updated getfromcpan to 1.1 from Alexander Burke
+	  <alex@pdqsolutions.com>
+
+	* contrib/perlmod2rpm:
+	- Moved perlmod2rpm into contrib/, required for getfromcpan and
+	  appropriate anyway, reported by both Alex Burke and also Stig
+	  Hackvan.
+
+	* pop-before-smtp:
+	- Detabbed the script file.
+	- Refolded the changelog to get lines under 75 cols.
+
+	* pop-before-smtp.init, contrib/redhat-init.bet:
+	- Replaced init script with vastly simpler, cleaner contrib from
+	  alex@pdqsolutions.com, moved my old bulky one to
+	  contrib/redhat-init.bet
+
+	* contrib/*:
+	- Added Stig Hackvan's qmail patches in contrib/qmail.
+	- Added Stig Hackvan's syslog patches in contrib/syslog.
+	- Contrib/pop-before-smtp.init-Solaris-7 renamed to
+	  contrib/pop-before-smtp.init-generic, after applying a minor tweak
+	  from Mike Saunders <method@method.cx> that sufficed to let it be
+	  called from rc.local on FreeBSD.
+
+2000-11-15  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.25.
+	- Added commentary about DB_File prereq, from Mike Saunders
+	  <method@method.cx>, as well as the Solaris init script he fixed and
+	  tested.
+	- Justin <justin@inwa.com.au> contributed Courier support.
+	- Added references to the website in the above comment and DOWNLOAD
+	  and AUTHOR sections to the pod.
+	- Added popa3d support contributed by bartek marcinkiewicz
+	  <jr@rzeznia.eu.org>.
+
+	* README:
+	- Added PLATFORM-SPECIFIC NOTES to the top of README as a quick guide
+	  to help point people at bits they might find interesting, as the
+	  number of platform- and application-specific bits is climbing quick.
+
+	* contrib/*:
+	- Alexander Burke <alex@pdqsolutions.com> contributed the getfromcpan
+	  script, to pkg and install all the needed prerequisite perl modules
+	  in one go.
+	- Separated out the contrib stuff into a contrib/ directory, as the
+	  single flat directory was getting crowded.
+
+2000-11-01  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.24.
+	- Sanitize the environment a little harder.
+
+2000-10-30  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.23.
+	- Fixed GetOptions to match docs and handle --logfile.
+
+2000-10-11  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.22.
+	- Jeremy Shaffner <jer@jorsm.com> pointed out that several of the
+	  example $pats didn't have the needed terminal semicolons; fixed
+	  that.
+
+2000-09-20  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.21.
+	- Olivier Castan <ocastan@cybercable.fr> reported a bug in the
+	  debugging code, it reported purges it wasn't acting on because the
+	  grace period hadn't expired.
+
+2000-09-18  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.20.
+	- Robert L Mathews pointed out that I'd neglected to skip the update
+	  of the db file if the client was already authorized; this update
+	  adds that optimization.
+	- And Robert L Mathews also gave another optimization, hoisting the
+	  syncs out of the purge loop and ensuring that all updates are
+	  covered by a single sync.
+
+2000-09-18  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.19.
+	- Robert L Mathews performed benchmarks demonstrating that the
+	  performance cost of the flocks is negligible, so I switched them to
+	  default to on.
+
+2000-09-17  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.18.
+	- Added flocks from Robert L Mathews <rob@tigertech.com>.
+
+2000-09-17  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.17.
+	- Brian Duggan <bduggan@oven.com> and Jeff Moore <jbm@oven.com> worked
+	  out a fix for the sometimes-present nmsgs= at the end of the UW
+	  daemons' log entries.
+
+	* README.rootless-install:
+	- Kevin Lynn <klynn@santacruz.org> suggested I include instructions
+	  for running as a non-root user.
+
+2000-08-10  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.16.
+	- William Yodlowsky <wyodlows@andromeda.rutgers.edu> provided the
+	  beautifully trivial patch for Taint support.
+	- Added pattern for gnu-pop3d, as $pat2, for coexisting with UW (or
+	  some other) imapd.
+
+	* README.QUICKSTART:
+	- Darron Froese provided README.QUICKSTART.
+
+	* pop-before-smtp.init:
+	- Made $debug default in init script.
+
+2000-07-31  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.15.
+
+2000-07-31  Daniel Roesen  <dr@bofh.de>
+
+	* pop-before-smtp.init:
+	- Renamed init script to a nice lengthy pop-before-smtp.
+	- Fixed to clean up msgs for restart.
+	- Added status option.
+	- Added logic to remove the pidfile when the daemons is successfully
+	  killed.
+	- Fixed typo "reset" -> "restart" in syntax msg.
+
+	* pop-before-smtp.spec:
+	- Yanked daemon start/stop on rpm -i/rpm -e.
+	- Added a commented-out pattern for cucipop.
+
+	* pop-before-smtp:
+	- Added documentation for --nowrite and --debug.
+	- Documented the trick of using a logger daemon to prod cleanups.
+	- Attempted yet another desperate effort to perhaps accomodate all the
+	  different varients of qpopper in one $pat.
+
+2000-07-31  <wyodlows@andromeda.rutgers.edu>
+
+	* pop-before-smtp:
+	- Also adopted regex tweak from wyodlows@andromeda.rutgers.edu so that
+	  Cyrus users can pop from unresolvable ip addrs (common w/ dialups).
+
+2000-06-19  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.14.
+
+2000-06-19  Nick Bauer <nickb@inc.net>
+
+	* pop-before-smtp:
+	- Will the varient qpopper logfile formats never cease?
+
+2000-06-13  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.13.
+
+2000-06-13  Chris D.Halverson <cdh@CompleteIS.com>
+
+	* pop-before-smtp:
+	- Yet another qpopper entry; matches a logfile format Chris collected
+	  on a Solaris 2.6 system w/ Qpopper 3.0b29.
+
+2000-06-09  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.12.
+
+2000-06-09  Alex Burke <alex@pdqsolutions.com>
+
+	- Added popper entry to match logfile rec.
+
+2000-06-08  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.11.
+
+2000-06-08  Daniel Meredith <dman@madcat.investimg.com>
+
+	* pop-before-smtp:
+	- Added qpopper support.
+
+2000-04-05  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.10.
+
+2000-04-05  Frank Auciello <frank@torontowired.com>
+
+	* pop-before-smtp:
+	- Added regexp for qmail's pop3d.
+
+2000-03-21  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.9.
+	- Added support for files in mynetworks, tested by Andy Dills.
+
+2000-03-21  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.8.
+	- Tweaked UW regexp based on further feedback from Andy Dills.
+
+2000-03-20  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.7.
+	- Added regexp for courier-imap.
+
+2000-03-13  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.6.
+
+	* README:
+	- Added installation notes on prerequisites.
+
+2000-02-21  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.5.
+	- Added comment pointing to File::Tail for description of the options
+	  with which I'm initializing it.
+
+2000-02-21  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.4.
+
+2000-02-21  Kenn Martin <kmartin@infoteam.com>
+
+	* pop-before-smtp:
+	- Added comment describing pattern for Cyrus logfile entries.
+
+2000-02-07  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.3.
+
+2000-02-07  Stig Hackvan <stig@hackvan.com>
+
+	* pop-before-smtp:
+	- Fixed log-watching pattern to correctly recognize imap
+	  authentications.
+
+2000-01-25  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp, pop-before-smtp.spec:
+	- Released version 1.2.
+
+2000-01-25  Andy Dills <andy@xecu.net>
+
+	* pop-before-smtp:
+	- Added discussion of possible problem with File::Tail w/ tail => -1.
+	- Fixed regexp to work right with clients who don't have reverse DNS
+	  set up properly.
+
+2000-01-21  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp:
+	- Released version 1.1.
+
+2000-01-21  Stig Hackvan <stig@hackvan.com>
+
+	* README:
+	- Added mention of Time::HiRes as prereq for File::Tail.
+
+2000-01-04  Bennett Todd  <bet@rahul.net>
+
+	* pop-before-smtp:
+	- Released version 1.0 (first public release).

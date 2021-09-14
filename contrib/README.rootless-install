@@ -1,0 +1,43 @@
+At Kevin Lynn <klynn@santacruz.org>'s suggestion, I'm including here
+notes on running this daemon as a non-root user.
+
+The daemon has no intrinsic need to run as root. Depending on your
+local security practice, it may have no such need at all.
+
+pop-before-smtp has a few permission requirements. It must be able
+to read the maillog; it must be able to run and read the output of
+postconf; and it must be able to write the db file.
+
+For the simplest installation allowing non-root pop-before-smtp, you
+simply must ensure that maillog, and the directory that contains it,
+are world readable (default on most systems), and have a special
+non-root user, let's say (for purposes of argument) "popbsmtp",
+which owns a mode 755 directory in which the db file will be read;
+it might be a subdirectory of /etc/postfix/, but it can be anywhere.
+/var may be more appropriate. To be concrete, let's say
+/var/popbsmtp/. You might create the user with
+
+	useradd -d /no/home -M popbsmtp
+
+(Red Hat options, may vary on other systems).
+
+Then the init invocation might be
+
+	nohup su popbsmtp /usr/sbin/pop-before-smtp \
+		--dbfile=/var/popbsmtp/pop-before-smtp
+
+and the /etc/postfix/main.cf entry might look something like
+
+  smtpd_recipient_restrictions = permit_mynetworks,reject_non_fqdn_recipient,
+	check_client_access hash:/var/popbsmtp/pop-before-smtp,
+	reject_unauth_destination
+
+If your local security policy makes you want to avoid the
+world-readable maillog, simply make /var/popbsmtp mode 700, and have
+syslogd (which runs as root, and writes with root privs), put the
+pop/imap log entries in e.g. /var/popbsmtp/maillog, then invoke the
+daemon with a command like
+
+	nohup su popbsmtp /usr/sbin/pop-before-smtp \
+		--logfile=/var/popbsmtp/maillog \
+		--dbfile=/var/popbsmtp/pop-before-smtp

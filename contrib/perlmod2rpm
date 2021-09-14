@@ -1,0 +1,144 @@
+#!/usr/bin/perl -w
+# perlmod2rpm 1.2 Bennett Todd <bet@rahul.net> Freely Redistributable
+# 1.2 taught to use with Config.pm, fixed attr in %files
+# 1.1 Worked with RH6.1+perl5.005_63 and RH6.0+perl5.005_03
+# 1.0 Worked with RH6.1+perl5.005_63, had the latter wired in
+
+=head1 NAME
+
+    perlmod2rpm --- wrap, or re-wrap, a perl module in RPM clothing
+
+=head1 SYNOPSIS
+
+    perlmod2rpm [-n] [-d] tarball-or-rpm [tarball-or-rpm ...]
+
+=head1 DESCRIPTION
+
+B<perlmod2rpm> takes one or more perl modules and wraps them with rpm
+dressing. It can be fed either the tar.gz file as downloaded from CPAN, or a
+previously-wrapped rpm. It will ask the answers to any questions it can't
+deduce, then write a spec file. Then it runs "rpm -ba" on the spec file unless
+B<-n> is specified.
+
+B<-d> enables a debugging dump of the variables right before it writes the
+spec file.
+
+=head1 PATHS
+
+You _must_ place the tarballs, if any, in %_topdir/SOURCES/. The spec
+files will be written in %_topdir/SPECS/.
+
+=cut
+
+use strict;
+use IO::File;
+use Term::ReadLine;
+use File::Basename;
+use Data::Dumper;
+use Getopt::Std;
+use Config;
+use Cwd;
+use Fatal qw(IO::File::new close);
+$0 = basename $0;
+
+use vars qw($opt_n $opt_d);
+$opt_n = $opt_d = 0;
+die "syntax: $0 [-n] [-d] filename [...]\n" unless getopts('nd') and @ARGV;
+
+my $oldcwd = cwd;
+my $topdir = '/usr/src/redhat';
+if (open(IN, "$ENV{HOME}/.rpmmacros")) {
+    while (<IN>) {
+	if (/\%_topdir\s+(\S+)/) {
+	    $topdir = $1;
+	    last;
+	}
+    }
+}
+chdir "$topdir/SOURCES" or die;
+
+my ($mday,$mon,$year,$wday) = (localtime(time))[3..6];
+my @M = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+my @D = qw(Sun Mon Tue Wed Thu Fri Sat);
+$mon = $M[$mon];
+$wday = $D[$wday];
+$year += 1900;
+
+my $th;
+
+for (@ARGV) {
+	$_ = "$oldcwd/$_" unless m#^/#;
+	die "no such file $_" unless -f;
+	my %d;
+	if (/\.src\.rpm$/) {
+		my $old = $_;
+		($_) = grep { /\.tar\.gz$/ }
+			`rpm2cpio $old|cpio -iuv \\*.tar.gz 2>&1`;
+		die "cannot find src in $old" if $?;
+		chomp;
+		$d{summ} = `rpm -qp --queryformat '%{SUMMARY}' $old`;
+		$d{desc} = `rpm -qp --queryformat '%{DESCRIPTION}' $old`;
+		$d{rels} = `rpm -qp --queryformat '%{RELEASE}' $old`;
+		$d{vers} = `rpm -qp --queryformat '%{VERSION}' $old`;
+		$d{name} = `rpm -qp --queryformat '%{NAME}' $old`;
+	}
+	die "$_: only feed me src rpms or tarballs" unless /\.tar\.gz$/;
+	$d{vers} = $1 if s/-([^-]+)\.tar\.gz$// and !defined $d{vers};
+	$d{name} = basename($_) unless defined $d{name};
+	($d{cpan}) = basename($1) if /^([^-]+)/;
+	$d{summ} = "perl module $d{name}" unless defined $d{summ};
+	$d{desc} = "perl module $d{name}" unless defined $d{desc};
+	$d{rels} = 0 unless defined $d{rels};
+	$d{rels}++;
+	for (@d{qw(summ desc)}) { s/^\s+//; s/\s+$//; s/\s+/ /g; }
+	print Data::Dumper->Dump([\%d], [qw(%d)]) if $opt_d;
+	for (qw(name vers cpan)) {
+		if (!defined($d{$_})) {
+			$th = Term::ReadLine->new($0) unless defined $th;
+			$d{$_} = $th->readline("$_: ");
+		}
+	}
+	IO::File->new(">$topdir/SPECS/$d{name}.spec")->print(<<Eof);
+Summary: $d{summ}
+Name: $d{name}
+Version: $d{vers}
+Release: $d{rels}
+Copyright: Freely Redistributable
+Packager: Bennett Todd <bet\@mordor.net>
+Group: Utilities/Text
+Source: http://www.cpan.org/modules/by-module/$d{cpan}/$d{name}-$d{vers}.tar.gz
+Requires: perl >= 5.004
+BuildRoot: /var/tmp/$d{name}-rpmroot
+
+%description
+
+$d{desc}
+
+%prep
+%setup
+
+%build
+perl Makefile.PL PREFIX=\$RPM_BUILD_ROOT/usr && make
+
+%install
+
+mkdir -p \$RPM_BUILD_ROOT/$Config{sitearch}
+make PREFIX=\$RPM_BUILD_ROOT/usr \\
+     INSTALLSITELIB=\$RPM_BUILD_ROOT$Config{sitelib} \\
+     INSTALLSITEARCH=\$RPM_BUILD_ROOT$Config{sitearch} \\
+     INSTALLMAN1DIR=\$RPM_BUILD_ROOT$Config{man1dir} \\
+     INSTALLMAN3DIR=\$RPM_BUILD_ROOT$Config{man3dir} \\
+     install
+
+find \$RPM_BUILD_ROOT -name perllocal.pod | perl -lne unlink
+
+%files
+%defattr(-,root,root)
+/usr/*
+
+%changelog
+* $wday $mon $mday $year <bet\@mordor.net>
+  - Initial Wrap
+Eof
+	system "rpm -ba $topdir/SPECS/$d{name}.spec" and die unless $opt_n;
+}

@@ -1,0 +1,52 @@
+#!/usr/bin/perl -w
+
+use Date::Parse;
+use Date::Format;
+
+use vars qw( $pat $out_pat $PID_pat $logtime_pat );
+
+my $patfile = shift;
+die "Usage: $0 PATFILE [LOGFILE...]\n" unless defined $patfile;
+
+$logtime_pat = '^(\w\w\w +\d+ \d+:\d+:\d+)';
+eval `cat $patfile`;
+if (defined $PID_pat) {
+    if (!-f 'pop-before-smtp-conf.pl') {
+	die <<EOT;
+I can't find pop-before-smtp-conf.pl to load the multi-line custom-match function.
+EOT
+    }
+    eval `sed -ne '/^ *my.*\%popConnected/,/^EOT/p' <pop-before-smtp-conf.pl`;
+} else {
+    if (!defined $pat) {
+	die <<EOT;
+The PATFILE must define a \$pat variable (and maybe an \$out_pat var)
+OR the \$PID_pat, \$IP_pat, \$OK_pat, etc. variables.
+EOT
+    }
+    foreach ($pat, $out_pat) {
+	s/\[LOGTIME\]/$logtime_pat/g if defined $_;
+    }
+    if (!defined(&custom_match)) {
+	eval <<'EOT';
+ sub custom_match
+ {
+    if (defined $out_pat && /$out_pat/o) {
+	return ($1, $2, -1);
+    } elsif (/$pat/o) {
+	return ($1, $2, defined $out_pat);
+    }
+    ( );
+ }
+EOT
+    }
+}
+
+while (<>) {
+    my($ts, $ip, $inc) = &custom_match;
+    next unless defined $ts;
+    $inc = $inc < 0 ? ' OUT' : '';
+    print "$ARGV:$.: time($ts) ip($ip)$inc\n";
+} continue {
+    close ARGV if eof; # Reset the $. line numbers for each file.
+}

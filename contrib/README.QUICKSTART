@@ -1,0 +1,245 @@
+Please send criticisms and corrections to the popbsmtp mailing list:
+
+<URL:http://lists.sourceforge.net/lists/listinfo/popbsmtp-users>
+------------------------------------------------------------------------------
+
+Do these things:
+
+
+1. Install the necessary perl modules that pop-before-smtp requires.
+
+For a Debian system, you can install the dependencies this way:
+
+% apt-get update
+% apt-get install libtimedate-perl libnet-netmask-perl libberkeleydb-perl
+
+Debian has the script as a package, so you should be able to just do this:
+
+% apt-get install pop-before-smtp
+
+You can then manually update the script to a newer version, if you so
+desire (but be careful to preserve the non-standard changes to the script
+that the Debian package makes).
+
+For a Gentoo Linux system, run a command like this as root:
+
+% emerge dev-perl/{TimeDate,Net-Netmask,DB_File}
+
+For an RPM-based system, you can often get packages via yum or urpmi.
+Try a command like this:
+
+% yum install perl-TimeDate perl-Net-Netmask perl-DB_File
+
+or maybe this:
+
+% urpmi perl-TimeDate perl-Net-Netmask perl-DB_File
+
+There are other software-update packages that your system might use, such
+as "up2date".  Use the one that is appropriate for your system.
+
+You can also search for the packages on an RPM site like rpmfind.net.
+
+If the hints above didn't work for you or you just want to install things
+without using packages, read on (otherwise skip to step 2).
+
+If you want to create your own perl-module RPMs, take a look at the script
+in contrib named getfromcpan.  It fetches the perl modules, turns them into
+RPMs, and then (if you ran it as root) installs them.  I prefer to build
+the RPMs as a non-root user and then install the RPMs manually as root.
+The script works either way because it looks for your ~/.rpmmacros file to
+determine what "topdir" to use.
+
+For the non-RPM way, run these commands as root:
+
+% perl -MCPAN -e 'install Date::Parse'
+% perl -MCPAN -e 'install Net::Netmask'
+
+That will install the necessary Perl modules from CPAN automatically -- as
+long as you have Internet connectivity and a Perl that knows about CPAN.
+
+If your system does not yet have the DB_File perl module, you may need to
+first install the BerkeleyDB library (perhaps from its C source), and then
+run this command:
+
+% perl -MCPAN -e 'install DB_File'
+
+
+2. Install the script and its support files.
+
+Run these commands (if using the default install locations):
+
+% cp pop-before-smtp.init /etc/rc.d/init.d/pop-before-smtp
+% cp pop-before-smtp /usr/sbin/
+% cp pop-before-smtp-conf.pl /etc
+
+
+3. Edit the pop-before-smtp-conf.pl file to customize it for your system.
+
+Look for this:
+
+# Set the log file we will watch for pop3d/imapd records.
+#$file_tail{'name'} = '/var/log/maillog';
+
+If the mentioned file is not the correct one that your email server uses to
+log when someone has authenticated, you can uncomment the second line and
+tweak its value (note that the code immediately following these lines might
+find your logfile automatically -- it searches for several other values).
+
+Take a look at the $pat definitions in the pop-before-smtp-conf.pl file
+and uncomment the one for the mail server that you're running - if you're
+running Linux it's probably going to be the $pat denoted by: "# For UW
+ipop3d/imapd" (this is also the default if no $pat is uncommented in the
+config file).  Make sure you uncomment all the lines from the "$pat = "
+start down to the nearest ';' for your pattern of choice (this is usually
+2-3 lines).
+
+If you're using Postfix and need to use a custom DB style or a different
+dbfile path, feel free to edit that into the file as well.
+
+If you're not using Postfix, you'll hopefully find your SMTP software
+mentioned near the end of the config file.  Comment out the two surrounding
+=cut lines for the section you want to enable.  For instance, sendmail
+users would enable the "Sendmail SMTP" section.
+
+
+4. Test the pop-before-smtp daemon.
+
+If you choose to skip the install step above and do some testing first,
+put this option first in the following commands:
+
+    --config=./pop-before-smtp-conf.pl 
+
+This command will dump the value of the main options so that you can verify
+that you've got your configuration right:
+
+% ./pop-before-smtp --dumpconfig
+
+This command will test that your $pat choice is right:
+
+% ./pop-before-smtp --debug --nowrite --reprocess
+
+You should see messages about what IPs the script finds and which ones it
+considers local and non-local.  (Press Ctrl-C to abort the script when
+you've seen enough.)  If you didn't see any IP mentions, either you don't
+have any POP/IMAP connections in the file, or you don't have the right $pat
+variable uncommented.  Check the maillog file manually to see what's up and
+then retest until things look good.
+
+
+5. Start the pop-before-smtp daemon:
+
+You should enable the pop-before-smtp script to run at boot time.  On
+RedHat systems you'd do this by running this:
+
+    chkconfig pop-before-smtp on
+
+Then, start the script going:
+
+% /etc/init.d/pop-before-smtp start
+
+Verify that the DB file has been created.  If you're not sure where to
+look, run "pop-before-smtp --dumpconfig" and look at the "dbfile" value.
+The actual created filename may have a suffix on it (such as ".db"), so
+append a '*' on the end of the name when you look for it.  Some examples:
+
+    ls -l /etc/mail/pop*
+    ls -l /etc/postfix/pop*
+    ls -l /var/lib/pop-before-smtp/hosts*
+
+This file should have a fairly recent modification date (as it should have
+just been created).  If it does not, see the debugging info on this page:
+
+    http://popbsmtp.sourceforge.net/debug.shtml
+
+
+6. Setup your SMTP software to look for this new DB file.
+
+For Postfix:
+============
+
+Look in your /etc/postfix/main.cf for "smtpd_recipient_restrictions" --
+add this somewhere into that line:
+
+    check_client_access hash:/etc/postfix/pop-before-smtp
+
+If you don't already have an "smtpd_recipient_restrictions" in your
+main.cf, add this one as it works pretty well:
+
+smtpd_recipient_restrictions = permit_mynetworks,reject_non_fqdn_recipient,
+	check_client_access hash:/etc/postfix/pop-before-smtp,
+	reject_unauth_destination
+
+For Sendmail:
+=============
+
+You need to tweak your config to use the IPs contained in the database.
+Remember that sendmail is very particular about tabs, so be careful in
+what you type when updating the config files.
+
+One of the easiest ways to set things up for a modern sendmail is to put an
+M4 macro file in the "hack" dir on your system, which is typically here:
+
+    /usr/share/sendmail-cf/hack
+
+The one that the sendmail folks themselves suggest using is found here:
+
+    http://www.sendmail.org/~ca/email/rules/popauth.m4
+
+A modified version of popauth.m4 that Alain Knaff tweaked to add some SPF
+compatibility is found in the contrib dir of the source.  (See its comments
+for its added POP_B4_SMTP_ISAUTH option.)
+
+To use either of these macro files, put a copy in the hack dir on your
+system and then add these lines to your sendmail.mc file:
+
+    define(`POP_B4_SMTP_TAG', `')dnl
+    HACK(`popauth')dnl
+
+Note that these rules expect the database to be /etc/mail/popauth, so be
+sure to set that as the dbfile in your pop-before-smtp-conf.pl file.
+
+For Other SMTP Software:
+========================
+
+Please let me know what it requires so I can include it here.
+
+
+7. Force your SMTP software to reload the config file.
+
+For postfix, you would type "postfix reload" (as root).
+
+For sendmail I think you need generate a new sendmail.cf file from your
+macro files, but I don't know how to tell sendmail to reload its config
+(please let me know so I can update this).
+
+
+8. Test the setup.
+
+After you access your POP mailbox (from a non-local IP, of course!) you
+should find that the modification date on the DB file has been updated.
+You can see the current contents of the database by running this:
+
+    pop-before-smtp --list
+
+If the IP is not there, see the debugging info on this page:
+
+    http://popbsmtp.sourceforge.net/debug.shtml
+
+The next thing to test is to try to send a relayed email (one that is not
+addressed to the SMTP host's domain) to make sure that your SMTP software
+has opened up relaying for your IP.
+
+Finally, you should test that something hasn't gone wrong with your setup
+to make it an open relay.  The easiest way is to use the tests provided by
+mail-abuse.org.  From a shell on your SMTP system, run this command:
+
+    telnet relay-test.mail-abuse.org
+
+This will take a few seconds to sort itself out then the test will begin
+back to the same IP that you connected from (there is no prompting).
+You'll see the test output scroll by, and at the end you should see a
+summary of "System appeared to reject relay attempts" if everything is OK.
+
+These tests do NOT blacklist you if you are "open", so no worries about
+being RBL'ed if it is found that you are running as an open-relay -- just
+fix the problem and re-run the tests.

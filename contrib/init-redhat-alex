@@ -1,0 +1,58 @@
+#!/bin/sh
+# pop-before-smtp initscript by Alexander Burke <alex@pdqsolutions.com>
+#
+# chkconfig: 345 51 49
+# description: The pop-before-smtp daemon watches the mail log for \
+#              successful mailbox accesses, and adds the source IP \
+#              addresses to a file Postfix uses to allow relaying \
+#              for a fixed amount of time.
+#
+# This isn't even remotely original. I borrowed the vast majority
+# of what's below from RHL's default initscripts. Do with this as
+# you wish. Leaving my name and email address above would be nice. :)
+#
+# You'll probably need to tweak pathnames below for this script to work.
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+progname=pop-before-smtp
+pgm=/usr/sbin/$progname
+pid=/var/run/$progname.pid
+
+die(){ echo "$progname: $*">&2; exit 1; }
+
+# Make absolutely sure we don't dump core anywhere.
+# Alright, so I'm paranoid, okay? ;)
+ulimit -S -c 0 >/dev/null 2>&1
+
+# See how we were called.
+case "$1" in
+start)
+	echo -n "Starting $progname: "
+	$pgm --daemon=$pid
+	if test $? -eq 0; then
+		echo_success
+	else
+		echo_failure
+	fi
+	echo
+	touch /var/lock/subsys/$progname
+	;;
+stop)
+	echo -n "Stopping $progname: "
+	killproc $progname
+	rm -f /var/lock/subsys/$progname
+	echo
+	;;
+restart)
+	$0 stop
+	$0 start
+	;;
+status)
+	status /usr/sbin/$progname
+	;;
+*)
+	die "Usage: `basename $0` {start|stop|restart|status}"
+	;;
+esac

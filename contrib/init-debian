@@ -1,0 +1,71 @@
+#!/bin/sh
+#
+# Written by Bennett Todd <bet@rahul.net> as part of the pop-before-smtp daemon
+# Customized by Jonas Smedegaard <dr@jones.dk> for use with Debian GNU systems
+# Updated for 1.30 by Wayne Davison <wayned@users.sourceforge.net>
+# Additional tweaks by Andrew Shugg <andrew@neep.com.au>
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+progname=pop-before-smtp
+pgm=/usr/sbin/$progname
+pid=/var/run/$progname.pid
+
+test -f $pgm || exit 0
+
+if test -f /etc/$progname/$progname.conf; then
+	# If there is a config file, let it do its job.
+	:
+else
+	# Without a config file, try to intuit the proper options.
+	db=/var/lib/pop-before-smtp/hosts
+	dbfile=--dbfile=$db
+	mail=/var/log/mail.log
+	watchlog=--watchlog=$mail
+	log=/var/log/$progname
+	#logto=--logto=$log
+fi
+
+die(){ echo "$progname: $*">&2; exit 1; }
+
+set -e
+
+case "$1" in
+start)
+	echo -n "Starting $progname: "
+	$pgm $dbfile $watchlog $logto --daemon=$pid
+	if test $? -eq 0; then
+		echo "done."
+	else
+		echo "failed."
+		exit 1
+	fi
+	;;
+stop)
+	echo -n "Stopping $progname: "
+	p=`cat $pid 2>/dev/null`; test -n "$p" && (
+		kill $p 2>/dev/null || exit 0; sleep 1
+		kill -9 $p 2>/dev/null || exit 0; sleep 1
+		kill -0 $p && die "$pid won't die"
+	)
+	if test $? -eq 0; then
+		rm -f $pid
+		echo "done."
+	else
+		echo "failed."
+		exit 1
+	fi
+	;;
+restart|force-reload)
+	$0 stop || true
+	$0 start
+	;;
+status)
+	p=`cat $pid 2>/dev/null`
+	test -n "$p" || die "no pidfile for $pgm"
+	kill -0 $p 2>/dev/null || die "$pgm[$p] is no longer running"
+	ps wup $p
+	;;
+*)
+	die "Usage: `basename $0` {start|stop|restart|force-reload|status}"
+	;;
+esac

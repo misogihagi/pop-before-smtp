@@ -1,0 +1,84 @@
+--- pop_auth.c	2002-09-09 13:07:48.000000000 +0200
++++ pop_auth.c	2004-04-21 17:34:26.000000000 +0200
+@@ -7,6 +7,8 @@
+ #include <string.h>
+ #include <syslog.h>
+ 
++#include "popbsmtpsupport.h"
++
+ #include "misc.h"
+ #include "params.h"
+ #include "protocol.h"
+@@ -83,7 +85,7 @@
+ 	}
+ #endif
+ 	syslog(result == AUTH_OK ? SYSLOG_PRI_LO : SYSLOG_PRI_HI,
+-		"Authentication %s for %s",
++		"Authentication %s for %s -- [%s]",
+ 		result == AUTH_OK ? "passed" : "failed",
+-		user ? user : "UNKNOWN USER");
++		user ? user : "UNKNOWN USER", inet_ntoa(saddr.sin_addr));
+ }
+--- pop_root.c	2002-03-21 21:15:19.000000000 +0100
++++ pop_root.c	2004-04-21 17:32:01.000000000 +0200
+@@ -44,6 +44,8 @@
+ static char *user;
+ static char *spool, *mailbox;
+ 
++#include "popbsmtpsupport.h"
++
+ int log_error(char *s)
+ {
+ 	syslog(SYSLOG_PRI_ERROR, "%s: %m", s);
+@@ -207,6 +209,13 @@
+ 	if (virtual_startup()) return 1;
+ #endif
+ 
++#if !POP_STANDALONE
++	slen = sizeof(saddr);	
++	if (getpeername(0, (struct sockaddr *)&saddr, &slen)<0) {
++		syslog(SYSLOG_PRI_ERROR, "getpeername(0) failed");
++		return 1;
++	}
++#endif
+ 	return 0;
+ }
+ 
+--- popbsmtpsupport.h	1970-01-01 01:00:00.000000000 +0100
++++ popbsmtpsupport.h	2004-04-21 17:32:01.000000000 +0200
+@@ -0,0 +1,16 @@
++#ifndef _SYS_TYPES_H_
++#include <sys/types.h>
++#endif
++#ifndef _SYS_SOCKET_H_
++#include <sys/socket.h>
++#endif
++#ifndef _NETINET_IN_H_
++#include <netinet/in.h>
++#endif
++#ifndef _ARPA_INET_H_
++#include <arpa/inet.h>
++#endif
++
++struct sockaddr_in saddr;
++int slen;
++
+--- standalone.c	2003-03-09 20:34:23.000000000 +0100
++++ standalone.c	2004-04-21 17:32:01.000000000 +0200
+@@ -28,6 +28,8 @@
+ int deny_severity = SYSLOG_PRI_HI;
+ #endif
+ 
++#include "popbsmtpsupport.h"
++
+ /*
+  * These are defined in pop_root.c.
+  */
+@@ -171,6 +173,7 @@
+ 		addrlen = sizeof(addr);
+ 		new = accept(sock, (struct sockaddr *)&addr, &addrlen);
+ 
++		memcpy(&saddr, &addr, addrlen);
+ /*
+  * I wish there was a portable way to classify errno's... In this case,
+  * it appears to be better to risk eating up the CPU on a fatal error

@@ -1,0 +1,68 @@
+#!/bin/sh
+# chkconfig: 2345 99 01
+# description: pop-before-smtp daemon
+
+progname=pop-before-smtp
+pgm=/usr/sbin/$progname
+pid=/var/adm/$progname.pid
+conf=/etc/$progname-conf.pl
+test -d /var/run && pid=/var/run/$progname.pid
+
+if test -f $conf; then
+	# If there is a config file, let it do its job.
+	conf=--config=$conf
+else
+	# Without a config file, try to intuit the proper options.
+	db=/etc/postfix/pop-before-smtp
+	#dbfile=--dbfile=$db
+	mail=/var/log/maillog
+	test -f $mail || mail=/var/log/mail/info
+	test -f $mail || mail=/var/log/messages
+	test -f $mail || mail=/var/adm/messages
+	watchlog=--watchlog=$mail
+	log=/var/adm/$progname
+	test -f /var/log/messages && log=/var/log/$progname
+	logto=--logto=$log
+	conf=''
+fi
+
+die(){ echo "$progname: $*">&2; exit 1; }
+
+case "$1" in
+start)
+	echo -n "Starting $progname: "
+	$pgm $conf $dbfile $watchlog $logto --daemon=$pid
+	if test $? -eq 0; then
+		echo done
+	else
+		echo failed
+	fi
+	;;
+stop)
+	echo -n "Stopping $progname: "
+	p=`cat $pid 2>/dev/null`; test -n "$p" && (
+		kill $p || exit 0; sleep 1
+		kill -9 $p 2>/dev/null || exit 0; sleep 1
+		kill -0 $p && die "$pid won't die"
+	)
+	if test $? -eq 0; then
+		rm -f $pid
+		echo done
+	else
+		echo failed
+	fi
+	;;
+restart)
+	$0 stop
+	$0 start
+	;;
+status)
+	p=`cat $pid 2>/dev/null`
+	test -n "$p" || die "no pidfile for $pgm"
+	kill -0 $p || die "$pgm[$p] is no longer running"
+	ps -fp $p
+	;;
+*)
+	die "Usage: `basename $0` {start|stop|restart|status}"
+	;;
+esac

@@ -1,0 +1,10 @@
+Change some comments that presume we're working with postfix to be more
+inclusive of other SMTP software.
+
+Factor out the $pats as much as possible.
+
+Add automatic configure-n-install tool.
+
+Document DB lib version issue, diagnosis, fixes.
+
+Make postconf mynetworks default to 127.0.0.0/8 if postconf doesn't.

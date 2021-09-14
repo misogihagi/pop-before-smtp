@@ -1,0 +1,4 @@
+bartek marcinkiewicz <jr@rzeznia.eu.org> contributed this support.  This
+adds the IP address to the "Approved from" log entries, which allows
+pop-before-smtp to use a single-line matching pattern (there is one for
+this patched popa3d version in the pop-before-smtp-conf.pl file).

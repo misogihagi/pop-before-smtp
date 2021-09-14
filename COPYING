@@ -1,0 +1,12 @@
+pop-before-smtp is Copyright (C) 1999, 2000, 2001 Bennett Todd,
+and Copyright (C) 2002, 2003, 2004 Wayne Davison.
+
+Anyone is free to use or redistribute pop-before-smtp in any way,
+for any purpose, free or commercially, unmodified or modified, as
+long as (a) the current changelog and credits aren't removed from
+the source, and (b) changes that are made are noted in the source,
+e.g. with a comment or with a changelog entry.
+
+Alternatively you are welcome to distribute pop-before-smtp under
+the terms of the GPL, or the terms of the BSD License, or the terms
+of the Perl Artistic License.

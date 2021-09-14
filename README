@@ -1,0 +1,89 @@
+NB for support, subscribe to the mailing list at
+<URL:http://lists.sourceforge.net/lists/listinfo/popbsmtp-users>
+
+PLATFORM-SPECIFIC NOTES (up front so you can comfortably ignore the
+stuff if it doesn't apply to you:-)
+
+Courier users (folks running this with the Courier SMTP daemon)
+  will want to enable the section of the pop-before-smtp-conf.pl file
+  that handles the Courier SMTP setup.
+
+Qmail users might want to look in the pop-before-smtp-conf.pl file
+  for a section that causes pop-before-smtp to manipulate qmail's
+  tcpserver tcprules file.
+
+Debian users may want to look at the contrib/init-debian script.
+
+Red Hat users who really miss the spiffo highlighted OK at
+  startup/shutdown should check out either of the alternate init
+  scripts, available in contrib/init-redhat-alex and
+  init-redhat-bet. Alex's version tries to use the Red Hat init
+  script functions as much as possible, in an effort to be just like
+  the other Red Hat init scripts. Bennett's just makes the minimum
+  use of them to get the highlighted display, while using the same
+  basic logic as the generic init script that has become the
+  package default.
+
+popa3d users can find a patch that adds the IP addr to the log
+  records in contrib/popa3d/, and a corresponding $pat commented out
+  in pop-before-smtp-conf.pl.
+
+Folks interested in running pop-before-smtp as a non-root user
+  should check out contrib/README.rootless-install
+
+People more interested in getting it running as fast as possible
+  without doing an RPM install, who have some environmental
+  prereqs properly in place -- working perl install with working
+  CPAN module, System V init scripts, daemon installing in
+  /usr/sbin/ -- should check out contrib/README.QUICKSTART. Also,
+  the contrib/getfromcpan script contributed by Alexander Burke
+  <alex@pdqsolutions.com> should make it enormously quicker and
+  easier to package and install all the prerequisite Perl modules
+  onto a Red Hat Linux system.
+
+If you prefer pop-before-smtp to log via syslog, there's a commented-
+  out setup for it in the pop-before-smtp-conf.pl file.
+
+Users of Microsoft Outlook Express 5.5 (and perhaps others as well),
+  do not use Tools->Options->Send->"Send messages immediately", as
+  it prevents Outlook Express from doing a POP or IMAP mailbox
+  download before sending messages, and so will get relay denied.
+
+END OF PLATFORM-SPECIFIC NOTES
+
+This is a simple program for watching /var/log/maillog, looking for
+successful logins via POP or IMAP, and maintaining a database that
+your SMTP software (e.g. Postfix, sendmail, qmail, etc.) can use to
+decide to let users who've recently logged in have relay privs. I.e.
+the server can be set to block spammers, and still allow legit users
+to relay through it even if they roam.
+
+Everything is in the script and its config file, including the
+documentation, the text of the init script, and the Postfix/sendmail
+config recommendations.
+
+For details on how to setup your system and to configure and install
+pop-before-smtp, see the README.QUICKSTART file in the contrib dir.
+Or, for the most up-to-date version, visit it on the web:
+
+    http://popbsmtp.sourceforge.net/quickstart.shtml
+
+There is also a good debug resource there as well:
+
+    http://popbsmtp.sourceforge.net/debug.shtml
+
+----- Note on the pop-before-smtp file-locking code -----
+
+The default DB_File support in pop-before-smtp uses a simple type of file
+locking that, while it has been shown to have a flaw in some circumstances,
+works fine for us because the flaw does not affect us.  Here are the
+details:
+
+Our code first ties the hash, and then uses the opened file handle to lock
+the file.  The problem with this method is that the tie routine has already
+read some data into the read-ahead buffer before the exclusive lock is
+granted.  If there were multiple programs writing to the DB, this could
+lead to database corruption (if the data in the first block were to change
+in between the first read and the time we get our exclusive lock).  Since
+pop-before-smtp is the only application updating the DB, the delayed flock
+scenario can not cause corruption of the database, so we're safe.

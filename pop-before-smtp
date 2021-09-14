@@ -1,0 +1,659 @@
+#!/usr/bin/perl -wT
+use strict;
+
+# Check the website <URL:http://popbsmtp.sourceforge.net/> for the latest
+# version, and the mailing list for discussing this program and asking for
+# help at <URL:http://lists.sourceforge.net/lists/listinfo/popbsmtp-users>
+#
+# Copyright (C) 1999, 2000, 2001 Bennett Todd.
+# Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007 Wayne Davison.
+# Freely Redistributable.  See the file COPYING for details.
+
+my $VERSION = '1.42';
+
+=head1 NAME
+
+pop-before-smtp - watch log for POP/IMAP auth, update map allowing SMTP
+
+=head1 SYNOPSIS
+
+ nohup pop-before-smtp [--config=FILE] [--[no]write] [--[no]debug] \
+     [--[no]flock] [--reprocess] [--watchlog=FILE] [--dbfile=FILE] \
+     [--logto=FILE] [--grace=SECONDS] [--daemon=PIDFILE] \
+     [--version] [--dumpconfig] [--list]
+
+=head1 DESCRIPTION
+
+pop-before-smtp watches your mail log file (e.g. /var/log/maillog) for lines
+written by your POP/IMAP software (e.g. UW popd/imapd) that indicate a
+successful login. When found, pop-before-smtp installs an entry for the IP in
+an on-disk hash (DB) that is watched by your SMTP software (e.g. Postfix,
+sendmail, qmail, etc.). It then expires these entries when 30 minutes have
+elapsed after the last POP/IMAP access from that IP.
+
+=head1 OPTIONS
+
+=over 4
+
+=item --config=FILE
+
+Specify the config file to read instead of /etc/pop-before-smtp-conf.pl.
+Useful for testing a new configuration before you install it. This option
+must occur first on the command-line since it will be processed before
+reading the config file, and all other options will be processed after
+reading the config file.
+
+=item --[no]write
+
+Specify --nowrite if you don't want the DB file to be even opened, let alone
+updated. Useful for trying out pattern-matching rules, especially when used
+with --debug and --reprocess.  (If your mail-log is world-readable, you can
+even run the test as a non-privileged user.)
+
+=item --[no]debug
+
+If you specify --debug, logging to stdout will be enabled, plus extra
+debug messages will be generated to help you diagnose local/remote IP
+distinctions. Specify --logto after this option if you want the messages
+to go somewhere other than stdout.  Often combined with --reprocess.
+
+=item --[no]flock
+
+Using --noflock will turn off the default file-locking used on the DB file.
+
+=item --reprocess
+
+Parse the whole mail-log file, pretending that each line is happening again.
+Useful for testing, especially when combined with --debug and possibly
+--nowrite.
+
+=item --watchlog=FILE
+
+You can specify what mail-log to watch for POP/IMAP events.  To see what the
+default value is for your system, run "pop-before-smtp --dumpconfig".
+
+=item --dbfile=FILE
+
+You can specify what DB file to update.  To see what the default value is for
+your system, run "pop-before-smtp --dumpconfig".  Typically, the filename that
+is created/updated is this name with a ".db" suffix added (because the default
+tie function appends the ".db" onto the specified db name -- if you supply a
+custom tie function, it is free to choose to do something else).
+
+=item --logto=FILE
+
+Turns on logging to the specified file (use "-" for stdout).
+
+=item --grace=SECONDS
+
+Set the number of seconds that an IP address is authorized after it
+successfully signs in via POP or IMAP.
+
+=item --version
+
+Output the current version of the script and exit.  May be combined with
+--dumpconfig and --list in the same run.
+
+=item --dumpconfig
+
+Output some config info and exit. This makes it easy to see what things like
+the dbfile, logto, and watchlog values are being set to in the config file.
+May be combined with --version and --list in the same run.
+
+=item --list
+
+List the current IPs contained in the DB file (if any) and exit.  May be
+combined with --version and --dumpconfig in the same run.
+
+=item --daemon=PIDFILE
+
+Become a daemon by forking, redirecting STDIN/STDOUT/STDERR to /dev/null,
+calling setsid, calling chdir('/'), and writing out the process ID of the
+forked process into the specified PIDFILE.
+
+=back
+
+=head1 INSTALLATION
+
+This daemon directly requires four modules from CPAN, which are not included
+in the base Perl release as of this writing.  See the quickstart guide for
+more information (either look at the README.QUICKSTART file in the source or
+visit http://popbsmtp.sourceforge.net/quickstart.shtml).
+
+You should edit the supplied pop-before-smtp-conf.pl file to customize things
+for your local system, such as scanning for the right POP/IMAP authorization,
+setting various options, etc.  Again, the quickstart guide cover this.
+
+When starting up, pop-before-smtp builds an internal table of all netblocks
+natively permitted by your SMTP software (for Postfix it looks at the output
+of "postconf mynetworks"). This allows us to filter out local IP addresses
+that are already authorized and thus need no special help from us.
+
+This daemon likes a couple of helpers. Several init scripts are included with
+the source and a version customized for your current OS may have been
+installed in the same package as the pop-before-smtp script.
+
+Once pop-before-smtp has been started (and thus the database file has been
+created), you'll need to modify your MTA's configuration to read the IPs from
+the database file.  This is also covered in the quickstart guide.
+
+=head1 DOWNLOAD, SUPPORT, etc.
+
+See the website http://popbsmtp.sourceforge.net/ for the latest version.
+See the mailing list (referenced on the website) for support.
+
+=head1 INTERNALS
+
+pop-before-smtp keeps two data structures for all currently-allowed hosts: a
+queue, and a hash. The queue contains [ipaddr, time] records, while the hash
+contains ipaddr => time. Every time the daemon wakes up to deal with something
+else from the logfile handle, it peeks a the front of the queue, and when
+the timestamp of the record there has expired (is > 30 minutes old) it tosses
+it, and if the timestamp in the hash equals the timestamp in the queue, it
+deletes the hash entry and the on-disk db file entry.
+
+pop-before-smtp protects the writes to the db file by flock.  As far as I
+know, the consequences of a collision (corrupt read in an smtpd) are
+relatively mild, and the likelihood of one is remote, but the performance
+impact of the locking seems to be negligible, so it's enabled by default.
+To disable the flocking, invoke with --noflock or set "$flock = 0" in the
+config file.
+
+=head1 AUTHORS
+
+Pop-before-smtp was created by Bennett Todd <bet@rahul.net>.  It is
+currently being maintained by Wayne Davison <wayned@users.sourceforge.net>.
+
+=cut
+
+use DB_File;
+use Net::Netmask;
+use Date::Parse;
+use Date::Format;
+use Getopt::Long;
+use Fcntl qw(:DEFAULT :flock :seek);
+use POSIX qw(setsid);
+
+use vars qw(
+    $pat $out_pat $write $flock $debug $reprocess $grace $logto %file_tail
+    @mynets %db $dbfile $dbvalue $logtime_pat
+    $mynet_func $tie_func $flock_func $add_func $del_func $sync_func
+    $tail_init_func $tail_getline_func $log_func
+);
+
+# Default values, possibly overridden in the config file.
+
+$logtime_pat = '(\w\w\w +\d+ \d+:\d+:\d+)';
+$pat = '^[LOGTIME] \S+ (?:ipop3s?d|imaps?d)\[\d+\]: ' .
+    '(?:Login|Authenticated|Auth|APOP) user=\S+ ' .
+    'host=(?:\S+ )?\[(\d+\.\d+\.\d+\.\d+)\]';
+$write = 1; # open and change the DB
+$flock = 1; # we do the exclusive file-locking when updating
+$debug = 0; # no debug messages
+$reprocess = 0; # no debug reprocessing of watchlog
+$dbfile = '/etc/postfix/pop-before-smtp'; # DB hash to write
+$dbvalue = 'ok';
+$grace = 30*60; # 30-minute grace period
+my($daemon_pidfile, $dump_version, $dump_config, $list_ips);
+
+$mynet_func = \&mynet_postfix;
+$tie_func = \&tie_DB;
+$flock_func = \&flock_DB;
+$add_func = \&add_DB;
+$del_func = \&del_DB;
+$sync_func = \&sync_DB;
+$tail_init_func = \&tail_init;
+$tail_getline_func = \&tail_getline;
+
+# See the pop-before-smtp-conf.pl file for what these values mean.
+%file_tail = (
+    name => '/var/log/maillog',
+    maxinterval => 10,
+    interval => 5,
+    adjustafter => 3,
+    tail => -1,
+    resetafter => 30,
+);
+
+# Build complete sanitary environment.
+%ENV = (
+    PATH => '/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/sbin:/usr/local/bin',
+    HOME => '/tmp',
+    SHELL => '/bin/sh',
+    LOGNAME => scalar getpwuid($<), # real me
+);
+
+my $config_file = '/etc/pop-before-smtp-conf.pl';
+
+# Kludge the parsing of the --config=FILE option so we can parse the
+# rest of our options after reading the config file.
+if (@ARGV && $ARGV[0] =~ /^--config=(.*)/) {
+    $config_file = $1;
+    shift;
+    require $config_file;
+} elsif (-f $config_file) {
+    require $config_file;
+}
+
+GetOptions(
+    'config=s' => sub { die "--config=$_[1] must be the first option.\n" },
+    'daemon=s' => \$daemon_pidfile,
+    'write!' => \$write,
+    'debug!' => sub { $debug = $_[1]; $logto = '-' if $debug },
+    'flock!' => \$flock,
+    'reprocess!' => \$reprocess,
+    'watchlog|logfile=s' => \$file_tail{'name'},
+    'dbfile=s' => \$dbfile,
+    'logto=s' => \$logto,
+    'grace=i' => \$grace,
+    'version' => \$dump_version,
+    'dumpconfig' => \$dump_config,
+    'list' => \$list_ips,
+) or die <<EOT;
+Usage: $0 [--config=FILE] [--[no]write] [--[no]debug]
+    [--[no]flock] [--reprocess] [--watchlog=FILE] [--dbfile=FILE]
+    [--logto=FILE] [--grace=SECONDS] [--daemon=PIDFILE]
+    [--version] [--dumpconfig] [--list]
+EOT
+
+$add_func = $del_func = $sync_func = sub { } if !$write;
+$flock_func = sub { } if !$flock || !$write;
+$log_func = sub { } if !$log_func;
+
+$logtime_pat =~ /\([^?].*?\)/
+    or die "\$logtime_pat does not contain value-returning parentheses:\n\"$logtime_pat\"\n";
+
+if ($dump_version) {
+    print "version: $VERSION\n";
+    exit unless $dump_config || $list_ips;
+}
+if ($dump_config) {
+    print "config file: $config_file\n";
+    print "watchlog: $file_tail{'name'}\n";
+    print "dbfile: $dbfile\n";
+    print "logto: $logto\n" if defined $logto;
+    if (defined(&custom_match)) {
+	print "Using custom_match() subroutine for watchlog matching.\n";
+    } else {
+	print "pat: \"$pat\"\n";
+	print "out_pat: \"$out_pat\"\n" if defined $out_pat;
+    }
+    print "logtime_pat: \"$logtime_pat\"\n";
+    exit unless $list_ips;
+}
+if ($list_ips) {
+    $tie_func->();
+    $flock_func->(1);
+    my @ips = sort keys %db;
+    $flock_func->(0);
+    print 'The database holds ', scalar @ips, ' IP';
+    if (@ips) {
+	print @ips == 1? '' : 's', ":\n\t", join("\n\t", @ips), "\n";
+    } else {
+	print "s.\n";
+    }
+    exit;
+}
+if (defined $daemon_pidfile) {
+    chdir('/') or die "Can't chdir to /: $!";
+    open(STDIN, '/dev/null') or die "Can't read /dev/null: $!";
+    open(STDOUT, '>/dev/null') or die "Can't write to /dev/null: $!";
+    my $pid = fork;
+    die "Can't fork: $!" unless defined $pid;
+    if ($pid) {
+	open(PF, ">$daemon_pidfile")
+	    or die "Can't write to $daemon_pidfile: $!";
+	print PF "$pid\n";
+	close PF;
+	exit;
+    }
+    open(STDERR, '>&STDOUT');
+    setsid;
+}
+
+$file_tail{'tail'} = -1 if $reprocess;
+
+if (defined $logto) {
+    set_output_log($logto);
+    $SIG{'HUP'} = sub { set_output_log($logto); }
+}
+
+$tail_init_func->();
+
+$SIG{'INT'} = \&sig_handler;
+$SIG{'TERM'} = \&sig_handler;
+$SIG{__DIE__} = \&mydie;
+
+$| = 1;
+
+my $now = time;
+$log_func->('info', "starting up (v$VERSION)");
+
+foreach ($pat, $out_pat) {
+    s/\[LOGTIME\]/$logtime_pat/g if defined $_;
+}
+
+@mynets = cleanup_nets($mynet_func->());
+if ($debug) {
+    my $cnt = @mynets;
+    my $s = $cnt == 1? '' : 's';
+    $log_func->('debug', "Using $cnt value$s for pre-authorized networks: `"
+			. join("', `", @mynets) . "'");
+}
+for (@mynets) {
+    my $netblock = Net::Netmask->new2($_);
+    if ($netblock) {
+	$netblock->storeNetblock();
+    } else {
+	$log_func->('err', "Net::Netmask error parsing `$_': " . &Net::Netmask::errstr);
+    }
+}
+
+my (%t, @q);
+
+if ($write) {
+    # If we're not re-reading the log file, set the existing DB entries
+    # to expire in $grace seconds from our startup time.
+    my $expire_old_at = $file_tail{'tail'}? 0 : $now + $grace;
+    $tie_func->();
+    $flock_func->(1);
+    foreach (keys %db) {
+	my($ip) = /^(\d+\.\d+\.\d+\.\d+)$/; # De-taint.
+	if ($expire_old_at) {
+	    unshift @q, [$ip, $expire_old_at];
+	    $t{$ip} = $expire_old_at;
+	    $log_func->('debug', "initialized old ip=$ip") if $debug;
+	} else {
+	    $del_func->($ip);
+	    $log_func->('debug', "removed old ip=$ip from DB") if $debug;
+	}
+    }
+    $flock_func->(0);
+}
+
+my $db_changed = 0;
+my $expire_check_time = 0;
+my $starting_up = $file_tail{'tail'} < 0;
+
+if ($reprocess) {
+    $SIG{ALRM} = sub {
+	$log_func->('info', '------ reached end of log file ------');
+	$log_func->('err', '$logtime_pat did not match a timestamp') unless $now;
+    };
+    alarm(5);
+    $now = 0;
+}
+
+while (1) {
+    $_ = $tail_getline_func->();
+    if ($reprocess) {
+	alarm(5);
+	# To assist with debugging, pretend the current time is when this
+	# line's event happened.
+	m/$logtime_pat/o and $now = str2time($1);
+	next unless $now;
+    } else {
+	$now = time;
+    }
+
+    if ($starting_up && m/$logtime_pat/o) {
+	if (str2time($1) + $grace >= $now) {
+	    $log_func->('debug', "startup log-scan complete") if $debug;
+	    $starting_up = 0;
+	    foreach my $ip (keys %t) {
+		$flock_func->(1) unless $db_changed;
+		$log_func->('debug', "connection count for ip=$ip starts at " . (-$t{$ip})) if $debug;
+		$add_func->($ip);
+		$log_func->('info', "added $ip to DB");
+		$db_changed = 1;
+	    }
+	}
+    }
+
+    my($timestamp, $ipaddr, $increment);
+    if (defined(&custom_match)) {
+	($timestamp, $ipaddr, $increment) = &custom_match;
+	next unless defined($ipaddr);
+	$increment ||= 0;
+    } else {
+	if (defined($out_pat) && (($timestamp, $ipaddr) = /$out_pat/o)) {
+	    $increment = -1;
+	} else {
+	    next unless ($timestamp, $ipaddr) = /$pat/o;
+	    $increment = defined($out_pat) ? 1 : 0;
+	}
+    }
+
+    my $ts = str2time($timestamp) or next;
+    $ts += $grace;
+    next if $starting_up && !defined $out_pat;
+
+    if (findNetblock($ipaddr)) {
+	$log_func->('debug', "ignoring local-net ip=$ipaddr") if $debug && !$starting_up;
+	next;
+    }
+    $log_func->('debug', "found ip=$ipaddr ($increment)") if $debug && !$starting_up;
+    my $already_enabled = exists($t{$ipaddr});
+    my $prev_ts = $already_enabled ? $t{$ipaddr} : 0;
+    my $cnt = $prev_ts < 0 ? -$prev_ts : 0;
+    $cnt += $increment;
+    if ($cnt <= 0) {
+	if ($starting_up) {
+	    delete $t{$ipaddr} if $already_enabled;
+	    next;
+	}
+	next if !$already_enabled && $increment < 0;
+	if ($prev_ts < 0) {
+	    foreach (@q) {
+		last unless $ts == $$_[1];
+		if ($ipaddr eq $$_[0]) {
+		    $prev_ts = $ts;
+		    last;
+		}
+	    }
+	}
+	unshift @q, [$ipaddr, $ts] if !$already_enabled || $ts > $prev_ts;
+	$t{$ipaddr} = $ts;
+	$log_func->('debug', "setting expiration time for ip=$ipaddr to $ts") if $debug;
+    } else {
+	$t{$ipaddr} = -$cnt;
+	next if $starting_up;
+	$log_func->('debug', "connection count for ip=$ipaddr is now $cnt") if $debug;
+    }
+    next if $already_enabled;
+
+    $flock_func->(1) unless $db_changed;
+    $add_func->($ipaddr);
+    $log_func->('info', "added $ipaddr to DB");
+    $db_changed = 1;
+} continue {
+    if ($db_changed || $now >= $expire_check_time) {
+	while (@q && $q[-1][1] <= $now) {
+	    my($ipaddr,$ts) = @{pop @q};
+	    #$log_func->('debug', "expiration event for ip=$ipaddr ($ts)") if $debug;
+	    if ($ts == $t{$ipaddr}) {
+		if (!$db_changed) {
+		    $flock_func->(1);
+		    $db_changed = 1;
+		}
+		delete $t{$ipaddr};
+		$del_func->($ipaddr);
+		$log_func->('info', "removed $ipaddr from DB");
+	    }
+	}
+	if ($db_changed) {
+	    $sync_func->();
+	    $flock_func->(0);
+	    $db_changed = 0;
+	}
+	$expire_check_time = $now + $grace / 2 + 60;
+    }
+}
+
+exit;
+
+
+sub cleanup_nets
+{
+    my @nets;
+    foreach (@_) {
+	# De-taint.  Also remove leading/trailing spaces.
+	($_) = /^\s*(.*?)\s*$/s;
+	foreach (split /[,\s]+/) {
+	    if (m#^/#) {
+		open(IN, $_) or die "Unable to open $_: $!";
+		# Slurp the whole file into $_.
+		undef $/; $_ = <IN>; $/ = "\n";
+		close IN;
+		# Remove any comments from the file's data.
+		s/#.*//mg;
+		push @nets, cleanup_nets($_);
+	    } elsif (m#^[a-z]+:#) {
+		# Just ignore hash files for now.
+	    } else {
+		push @nets, $_;
+	    }
+	}
+    }
+    @nets;
+}
+
+# --- START --- The default Postfix/DB_File support functions
+
+sub mynet_postfix
+{
+    my $mynet = '$mynetworks';
+    while ($mynet =~ /\$([^\/\s]+)/) {
+	my $var = $1;
+	$_ = `postconf $var`;
+	s/^\Q$var\E\s*=\s*//
+	    or die "postconf was unable to determine the value of: $var\n";
+	s/\s+$//;
+	$mynet =~ s/\$\Q$var\E/$_/g;
+    }
+    $mynet;
+}
+
+my $dbh;
+
+# We set the global %db to the opened database hash.  We also set $dbh for
+# our sync_DB function, and DB_FH for our flock_DB function.
+sub tie_DB
+{
+    $dbh = tie %db, 'DB_File', "$dbfile.db", O_CREAT|O_RDWR, 0666, $DB_HASH
+	or die "$0: cannot dbopen $dbfile: $!\n";
+    if ($flock) {
+	my $fd = $dbh->fd;
+	open(DB_FH,"+<&=$fd") or die "$0: cannot open $dbfile filehandle: $!\n";
+    }
+}
+
+sub flock_DB
+{
+    my($locking) = @_;
+    flock(DB_FH, $locking ? LOCK_EX : LOCK_UN)
+	or die "$0: flock_DB($locking) failed: $!\n";
+}
+
+sub add_DB
+{
+    my($ip) = @_;
+    $db{$ip} = $dbvalue;
+}
+
+sub del_DB
+{
+    my($ip) = @_;
+    delete $db{$ip};
+}
+
+sub sync_DB
+{
+    $dbh->sync and die "$0: sync $dbfile: $!\n";
+}
+
+# --- END --- The default Postfix/DB_File support functions
+
+# --- START --- The default logfile-reading functions
+
+sub tail_init
+{
+    &tail_open;
+    $::tail_buf = '';
+    if ($file_tail{'tail'} >= 0) {
+	if (defined sysseek(TAIL, -$file_tail{'tail'}*128, SEEK_END)) {
+	    &tail_getline; # dump partial line
+	} else {
+	    sysseek(TAIL, 0, SEEK_SET);
+	}
+    }
+}
+
+sub tail_open
+{
+    open(TAIL, $file_tail{'name'}) or die "Unable to open $file_tail{'name'}: $!";
+    $::tail_inode = (stat(TAIL))[1];
+}
+
+sub tail_getline
+{
+    while (1) {
+	return $1 if $::tail_buf =~ s/^(.*\n)//;
+	my $cnt = 1;
+	my $slept = 0;
+	my $i = $file_tail{'interval'};
+	while (1) {
+	    last if sysread(TAIL, $::tail_buf, 2048, length($::tail_buf));
+	    sysseek(TAIL, 0, SEEK_CUR);
+	    if ($slept >= $file_tail{'resetafter'}) {
+		$slept = 0;
+		my $new_inode;
+		foreach (1..5) {
+		    $new_inode = (stat($file_tail{'name'}))[1];
+		    last if $new_inode;
+		    sleep 2;
+		}
+		if ($::tail_inode != $new_inode) {
+		    &tail_open;
+		    $cnt = 1;
+		}
+	    }
+	    if ($cnt % $file_tail{'adjustafter'} == 0) {
+		$i += 2;
+		$i = $file_tail{'maxinterval'} if $i > $file_tail{'maxinterval'};
+	    }
+	    sleep $i;
+	    $cnt++;
+	    $slept += $i;
+	}
+    }
+}
+
+# --- END --- The default logfile-reading functions
+
+sub log_to_stdout
+{
+    my $level = shift;
+    print time2str('%b %e %T ', $now), @_, "\n";
+}
+
+sub set_output_log
+{
+    my($file) = @_;
+    open(LOG, ">>$file") or die "Unable to append to $file: $!";
+    $log_func = \&log_to_stdout;
+    select(LOG);
+}
+
+sub sig_handler
+{
+    my($sig) = @_;
+    $log_func->('crit', "caught SIG$sig -- exiting");
+    exit 1;
+}
+
+sub mydie
+{ 
+    my($msg) = @_;
+    $log_func->('crit', "fatal error: $msg") if defined $log_func;
+}

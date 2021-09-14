@@ -1,0 +1,145 @@
+#!/bin/bash
+#
+# getfromcpan version 1.2
+# Copyright (C) 2000 Alexander Burke <alex@pdqsolutions.com>
+#
+# You may do with this script as you like, as long as you leave the
+# above copyright notice intact. You're welcome to add lines below it
+# to reflect changes you've made to the script.
+#
+# There is no warranty, implied or otherwise, for this software.
+# Although unlikely, it may eat all your files and emit a loud belch.
+# If this, or anything even remotely similar, occurs, I cannot and will
+# not be held responsible. This is nothing more than a quick hack, and
+# could be a lot tighter and/or more elegant. (Hint! :)
+#
+# Please send changes to Alexander Burke <alex@pdqsolutions.com> and
+# Bennett Todd <bet@rahul.net> for inclusion in the next version of
+# pop-before-smtp.
+#
+# This script gets the files required for pop-before-smtp from CPAN and
+# (if you're root) installs them. Certain assumptions are made, namely that
+# you have wget installed and, if you don't have an .rpmmacros file,
+# that you're running on a Red Hat system.
+#
+# Please note that updates to these modules on CPAN will result in
+# version number (and hence filename) changes which will break this
+# script. If wget gives you a 404 error when trying to get one of the
+# files from CPAN, that's probably what's happened.
+#
+# REVISION HISTORY:
+# v1.0  12-Nov-2000  Initial release
+# v1.1  19-Nov-2000  Addition of more sanity checks; small tweaks
+# v1.2  24-Apr-2002  Allow non-root run, don't delete RPMs, updated CPAN vers
+# v1.3   5-Mar-2004  Removed no-longer-needed modules, updated CPAN vers
+#
+############################################################################
+
+TIMEDATE_VER=1.16	# Time/TimeDate
+NETMASK_VER=1.9007	# Net/Net-Netmask
+
+if [ -f $HOME/.rpmmacros ]; then
+    TOPDIR=`sed -ne 's/%_topdir[ 	]*//p' <$HOME/.rpmmacros`
+    if [ ! -d $TOPDIR ]; then
+	echo "ERROR: couldn't figure out %_topdir in your .rpmmacros file"
+	exit 1
+    fi
+else
+    TOPDIR=/usr/src/redhat
+fi
+
+echo Using RPM topdir of $TOPDIR
+
+# Some quick sanity checks. This isn't designed to catch everything!
+if [ ! -f ./perlmod2rpm ]; then
+      echo "ERROR: perlmod2rpm not found in the current directory!"
+      exit 1
+fi
+if [ ! -f `which wget` ]; then
+      echo "ERROR: wget not found!"
+      exit 1
+fi
+if [ ! -f `which rpm` ]; then
+      echo "ERROR: rpm not found!"
+      exit 1
+fi
+if [ ! -d $TOPDIR/SOURCES ]; then
+      echo "ERROR: $TOPDIR/SOURCES not accessible!"
+      exit 1
+fi
+if [ ! -d $TOPDIR/RPMS ]; then
+      echo "ERROR: $TOPDIR/RPMS not accessible!"
+      exit 1
+fi
+
+# Let's copy perlmod2rpm to where we'll be using it, and go there.
+cp ./perlmod2rpm $TOPDIR/SOURCES
+cd $TOPDIR/SOURCES
+
+# Preinstallation cleanup.
+rm -f TimeDate*.tar.gz Net-Netmask*.tar.gz
+
+# Okay, here we go.
+echo
+echo =======================================================================
+echo === Getting and building TimeDate...                                ===
+echo =======================================================================
+echo
+wget http://www.cpan.org/modules/by-module/Time/TimeDate-$TIMEDATE_VER.tar.gz
+RESULT=$?
+if [ "$RESULT" != "0" ]; then
+      echo "ERROR: Something went wrong! Aborting."
+      exit 1
+fi
+./perlmod2rpm TimeDate-$TIMEDATE_VER.tar.gz
+RESULT=$?
+if [ "$RESULT" != "0" ]; then
+      echo "ERROR: Something went wrong! Aborting."
+      exit 1
+fi
+if [ "$UID" == "0" ]; then
+    rpm -ivh ../RPMS/i?86/TimeDate-$TIMEDATE_VER-1.i?86.rpm
+    RESULT=$?
+    if [ "$RESULT" != "0" ]; then
+	  echo "ERROR: Something went wrong! Aborting."
+	  exit 1
+    fi
+fi
+echo
+echo =======================================================================
+echo === Getting and building Net-Netmask...                             ===
+echo =======================================================================
+echo
+wget http://www.cpan.org/modules/by-module/Net/Net-Netmask-$NETMASK_VER.tar.gz
+RESULT=$?
+if [ "$RESULT" != "0" ]; then
+      echo "ERROR: Something went wrong! Aborting."
+      exit 1
+fi
+./perlmod2rpm Net-Netmask-$NETMASK_VER.tar.gz
+RESULT=$?
+if [ "$RESULT" != "0" ]; then
+      echo "ERROR: Something went wrong! Aborting."
+      exit 1
+fi
+if [ "$UID" == "0" ]; then
+    rpm -ivh ../RPMS/i?86/Net-Netmask-$NETMASK_VER-1.i?86.rpm
+    RESULT=$?
+    if [ "$RESULT" != "0" ]; then
+	  echo "ERROR: Something went wrong! Aborting."
+	  exit 1
+    fi
+fi
+
+# Let's clean up.
+rm -f perlmod2rpm TimeDate*.tar.gz Net-Netmask*.tar.gz
+
+#if [ "$UID" == "0" ]; then
+    #rm -f ../RPMS/i?86/TimeDate*.rpm ../RPMS/i?86/Net-Netmask*.rpm
+#fi
+
+echo
+echo =======================================================================
+echo === getfromcpan completed successfully.                             ===
+echo =======================================================================
+echo
